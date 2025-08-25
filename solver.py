@@ -1,14 +1,22 @@
 import math
 
 def isValid(prompt: str, feedback: list, word: str) -> bool:
+    word = list(word)
     for i in range(len(feedback)):
-        if feedback[i] == 'g' and word[i] != prompt[i]:
-            return False
-        if feedback[i] == 'y' and (word[i] == prompt[i] or prompt[i] not in word):
-            return False
-        if feedback[i] == 'b' and prompt[i] in word:
-            return False
+        if feedback[i] == 'g':
+            if prompt[i] != word[i]:
+                return False
+            word[i] = '*'
+    for i in range(len(feedback)):
+        if feedback[i] == 'y':
+            if prompt[i] == word[i] or prompt[i] not in word:
+                return False
+            word[word.index(prompt[i])] = None
+        if feedback[i] == 'b':
+            if prompt[i] in word:
+                return False
     return True
+
 
 def generateFeedback(guess: str, word: str) -> list:
     feedback = ['b'] * 5
@@ -46,7 +54,7 @@ def generateGuesses(wordlist: list) -> str:
 
     return bestword
 
-''' Example usage in a console application
+'''Example usage in a console application
 with open('valid-wordle-words.txt', 'r') as f:
     wordlist = [line.strip() for line in f.readlines()] 
 
