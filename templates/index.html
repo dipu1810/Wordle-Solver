@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Wordle Solver</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+  <div class="bg-white shadow-xl rounded-2xl p-8 w-[500px]">
+    <h1 class="text-2xl font-bold text-center mb-6">Wordle Solver</h1>
+
+    <!-- Current Guess -->
+    <div id="guess-section" class="text-center mb-6">
+      <h2 class="text-lg font-semibold mb-2">Current Guess:</h2>
+      <div id="current-guess" class="flex justify-center space-x-2"></div>
+    </div>
+
+    <!-- Feedback dropdowns -->
+    <div id="feedback-section" class="flex justify-center space-x-2 mb-6"></div>
+    <div class="text-center">
+      <button onclick="submitFeedback()" 
+              class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow">
+        Submit Feedback
+      </button>
+    </div>
+
+    <!-- History -->
+    <div id="history" class="mt-8">
+      <h2 class="text-lg font-semibold mb-2">History</h2>
+      <div id="history-grid" class="space-y-2"></div>
+    </div>
+  </div>
+
+  <script>
+    let currentGuess = "{{ guess }}";
+    let history = [];
+
+    // Render current guess letters with dropdowns for feedback
+    function renderGuess() {
+      const guessDiv = document.getElementById("current-guess");
+      const feedbackDiv = document.getElementById("feedback-section");
+      guessDiv.innerHTML = "";
+      feedbackDiv.innerHTML = "";
+
+      currentGuess.split("").forEach((ch, i) => {
+        // letter display
+        const box = document.createElement("div");
+        box.className = "w-12 h-12 flex items-center justify-center border-2 rounded text-xl font-bold";
+        box.textContent = ch.toUpperCase();
+        guessDiv.appendChild(box);
+
+        // feedback dropdown
+        const select = document.createElement("select");
+        select.className = "w-12 h-12 border rounded text-center";
+        select.innerHTML = `
+          <option value="b">⬛</option>
+          <option value="y">🟨</option>
+          <option value="g">🟩</option>
+        `;
+        feedbackDiv.appendChild(select);
+      });
+    }
+
+    // Submit feedback to backend
+    async function submitFeedback() {
+      const selects = document.querySelectorAll("#feedback-section select");
+      let feedback = "";
+      selects.forEach(s => feedback += s.value);
+
+      const response = await fetch("/next", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ feedback })
+      });
+      const data = await response.json();
+
+      // Save to history
+      history.push({ guess: currentGuess, feedback });
+
+      // Render history
+      renderHistory();
+
+      if (data.done) {
+        alert(data.message);
+        return;
+      }
+
+      // Update current guess
+      currentGuess = data.next_guess;
+      renderGuess();
+    }
+
+    // Render history grid
+    function renderHistory() {
+      const grid = document.getElementById("history-grid");
+      grid.innerHTML = "";
+
+      history.forEach(entry => {
+        const row = document.createElement("div");
+        row.className = "flex space-x-2";
+
+        entry.guess.split("").forEach((ch, i) => {
+          const box = document.createElement("div");
+          box.className = "w-12 h-12 flex items-center justify-center rounded text-xl font-bold";
+
+          if (entry.feedback[i] === "g") {
+            box.classList.add("bg-green-500", "text-white");
+          } else if (entry.feedback[i] === "y") {
+            box.classList.add("bg-yellow-400", "text-white");
+          } else {
+            box.classList.add("bg-gray-400", "text-white");
+          }
+
+          box.textContent = ch.toUpperCase();
+          row.appendChild(box);
+        });
+
+        grid.appendChild(row);
+      });
+    }
+
+    renderGuess();
+  </script>
+</body>
+</html>
